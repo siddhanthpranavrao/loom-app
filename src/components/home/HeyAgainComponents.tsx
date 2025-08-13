@@ -8,6 +8,7 @@ import * as AC from '@bacons/apple-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import TouchableBounce from '@/components/ui/touchable-bounce';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabOverflow } from '@/components/ui/tab-bar-background';
 import { getInitials, getAvatarColor, formatTimeSlot } from '@/utils/ui-helpers';
 
 // Types
@@ -95,8 +96,8 @@ export function AppHeader() {
     );
 }
 
-// Animated Inline Message
-function AnimatedInlineMessage({
+// Bottom Toast Component
+export function BottomToast({
     message,
     type,
     visible
@@ -105,20 +106,22 @@ function AnimatedInlineMessage({
     type: 'success' | 'info';
     visible: boolean;
 }) {
+    const insets = useSafeAreaInsets();
+    const tabBarHeight = useBottomTabOverflow();
     const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(10)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
 
     useEffect(() => {
         if (visible) {
             Animated.parallel([
                 Animated.timing(fadeAnim, {
                     toValue: 1,
-                    duration: 150,
+                    duration: 200,
                     useNativeDriver: true,
                 }),
                 Animated.timing(slideAnim, {
                     toValue: 0,
-                    duration: 150,
+                    duration: 200,
                     useNativeDriver: true,
                 }),
             ]).start();
@@ -126,43 +129,78 @@ function AnimatedInlineMessage({
             Animated.parallel([
                 Animated.timing(fadeAnim, {
                     toValue: 0,
-                    duration: 120,
+                    duration: 150,
                     useNativeDriver: true,
                 }),
                 Animated.timing(slideAnim, {
-                    toValue: -10,
-                    duration: 120,
+                    toValue: 50,
+                    duration: 150,
                     useNativeDriver: true,
                 }),
             ]).start();
         }
     }, [visible]);
 
+    const isSuccess = type === 'success';
+    const iconName = isSuccess ? 'checkmark.circle.fill' : 'info.circle.fill';
+    const backgroundColor = isSuccess ? AC.systemGreen : AC.systemBlue;
+
     if (!visible) return null;
 
     return (
         <Animated.View
             style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                zIndex: 1000,
                 opacity: fadeAnim,
                 transform: [{ translateY: slideAnim }],
-                backgroundColor: type === 'success' ? AC.systemGreen : AC.systemBlue,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 12,
-                marginTop: 16,
-                alignSelf: 'center',
             }}
+            accessibilityLiveRegion="polite"
+            accessibilityLabel={message}
         >
-            <Text
+            <View
                 style={{
-                    color: 'white',
-                    fontSize: 14,
-                    fontWeight: '500',
-                    textAlign: 'center',
+                    marginHorizontal: 20,
+                    marginBottom: Math.max(insets.bottom, 16) + tabBarHeight + 18, // Safe area + actual tab bar height + extra padding
+                    backgroundColor,
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderRadius: 16,
+                    shadowColor: AC.label,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 12,
+                    elevation: 8,
                 }}
             >
-                {message}
-            </Text>
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                    }}
+                >
+                    <IconSymbol
+                        name={iconName}
+                        size={18}
+                        color="white"
+                    />
+                    <Text
+                        style={{
+                            color: 'white',
+                            fontSize: 15,
+                            fontWeight: '600',
+                            includeFontPadding: false,
+                        }}
+                    >
+                        {message}
+                    </Text>
+                </View>
+            </View>
         </Animated.View>
     );
 }
@@ -173,13 +211,11 @@ export function CatchUpCard({
     timeSlot,
     onCall,
     onSkip,
-    inlineMessage,
 }: {
     friend: Friend;
     timeSlot: FreeSlot;
     onCall: () => void;
     onSkip: () => void;
-    inlineMessage?: { message: string; type: 'success' | 'info' } | null;
 }) {
     const timeSlotText = formatTimeSlot(timeSlot.startTime, timeSlot.endTime);
     const firstName = friend.name.split(' ')[0];
@@ -269,59 +305,55 @@ export function CatchUpCard({
                     </Text>
                 )}
 
-                {/* Primary action button */}
-                <TouchableBounce
-                    accessibilityLabel={`Call ${friend.name}`}
-                    onPress={onCall}
-                    style={{
-                        backgroundColor: AC.systemBlue,
-                        paddingVertical: 16,
-                        borderRadius: 14,
-                        alignItems: 'center',
-                        marginBottom: 12,
-                    }}
-                >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <IconSymbol name="phone.fill" size={18} color="white" />
-                        <Text
-                            style={{
-                                color: 'white',
-                                fontSize: 16,
-                                fontWeight: '600',
-                            }}
-                        >
-                            Ring {firstName}
-                        </Text>
-                    </View>
-                </TouchableBounce>
-
-                {/* Secondary action */}
-                <Pressable
-                    accessibilityLabel="Skip suggestion"
-                    onPress={onSkip}
-                    style={({ pressed }) => ({
-                        alignItems: 'center',
-                        paddingVertical: 8,
-                        opacity: pressed ? 0.6 : 1,
-                    })}
-                >
-                    <Text
+                {/* Actions */}
+                <View>
+                    {/* Primary action button */}
+                    <TouchableBounce
+                        accessibilityLabel={`Call ${friend.name}`}
+                        onPress={onCall}
                         style={{
-                            color: AC.secondaryLabel,
-                            fontSize: 15,
-                            fontWeight: '500',
+                            backgroundColor: AC.systemBlue,
+                            paddingVertical: 16,
+                            borderRadius: 14,
+                            alignItems: 'center',
+                            marginBottom: 12,
                         }}
                     >
-                        Skip for now
-                    </Text>
-                </Pressable>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <IconSymbol name="phone.fill" size={18} color="white" />
+                            <Text
+                                style={{
+                                    color: 'white',
+                                    fontSize: 16,
+                                    fontWeight: '600',
+                                }}
+                            >
+                                Ring {firstName}
+                            </Text>
+                        </View>
+                    </TouchableBounce>
 
-                {/* Inline feedback */}
-                <AnimatedInlineMessage
-                    message={inlineMessage?.message || ''}
-                    type={inlineMessage?.type || 'info'}
-                    visible={!!inlineMessage}
-                />
+                    {/* Secondary action */}
+                    <Pressable
+                        accessibilityLabel="Skip suggestion"
+                        onPress={onSkip}
+                        style={({ pressed }) => ({
+                            alignItems: 'center',
+                            paddingVertical: 8,
+                            opacity: pressed ? 0.6 : 1,
+                        })}
+                    >
+                        <Text
+                            style={{
+                                color: AC.secondaryLabel,
+                                fontSize: 15,
+                                fontWeight: '500',
+                            }}
+                        >
+                            Skip for now
+                        </Text>
+                    </Pressable>
+                </View>
             </View>
         </View>
     );

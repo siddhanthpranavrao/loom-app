@@ -6,6 +6,7 @@ import {
   AppHeader,
   CatchUpCard,
   AppFooter,
+  BottomToast,
   type Friend,
   type FreeSlot
 } from "@/components/home/HeyAgainComponents";
@@ -154,7 +155,6 @@ export default function Page() {
             timeSlot={freeSlot}
             onCall={handleCall}
             onSkip={handleSkip}
-            inlineMessage={inlineMessage}
           />
 
           {/* Spacer */}
@@ -163,6 +163,13 @@ export default function Page() {
           {/* Footer */}
           <AppFooter />
         </View>
+
+        {/* Bottom Toast */}
+        <BottomToast
+          message={inlineMessage?.message || ''}
+          type={inlineMessage?.type || 'info'}
+          visible={!!inlineMessage}
+        />
       </View>
     </>
   );
