@@ -32,8 +32,8 @@ export default function Layout() {
             <Tabs.Screen name="(index)" systemImage="house.fill" title="Home" />
             <Tabs.Screen
               name="(info)"
-              systemImage="cursorarrow.rays"
-              title="Info"
+              systemImage="person.2.fill"
+              title="Friends"
             />
           </Tabs>
           <Toaster />
